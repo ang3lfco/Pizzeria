@@ -4,4 +4,6 @@ com\mycompany\pizzeria\Pizzeria2.class
 interfaces\IProducto.class
 dao\Conexion.class
 objetos\Producto.class
+presentacion\frmPizzeria$1.class
 dao\ProductoDAO.class
+presentacion\frmPizzeria.class
