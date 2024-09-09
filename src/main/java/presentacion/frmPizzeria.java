@@ -4,21 +4,102 @@
  */
 package presentacion;
 
+import dao.Conexion;
+import dao.ProductoDAO;
 import java.awt.Color;
+import java.util.List;
+import javax.swing.table.DefaultTableModel;
+import objetos.Producto;
 
 /**
  *
  * @author martinez
  */
 public class frmPizzeria extends javax.swing.JFrame {
+    private ProductoDAO productoDAO;
+    private Producto productoSeleccionado;
 
     /**
      * Creates new form frmPizzeria
      */
     public frmPizzeria() {
         initComponents();
+        setLocationRelativeTo(null);
+        productoDAO = new ProductoDAO(new Conexion());
         tblProductos1.setBackground(new Color(51,0,51));
         tblProductos1.getTableHeader().setBackground(new Color(100, 149, 237));
+        cargarTablaProductos();
+        
+        // Agregar listener para seleccionar un producto
+        tblProductos1.getSelectionModel().addListSelectionListener(e -> cargarProductoSeleccionado());
+        
+        
+        // Acciones del botón Agregar/Actualizar
+        btnGuardar1.addActionListener(e -> {
+            if (productoSeleccionado == null) {
+                // Agregar nuevo producto
+                Producto producto = new Producto(
+                    txfNombre1.getText(),
+                    Float.parseFloat(txfPrecio1.getText()),
+                    txfDescripcion1.getText()
+                );
+                productoDAO.agregar(producto);
+            } else {
+                // Actualizar producto existente
+                productoSeleccionado.setNombre(txfNombre1.getText());
+                productoSeleccionado.setPrecio(Float.parseFloat(txfPrecio1.getText()));
+                productoSeleccionado.setDescripcion(txfDescripcion1.getText());
+                productoDAO.actualizar(productoSeleccionado);
+            }
+            cargarTablaProductos();
+            limpiarCampos();
+        });
+
+        // Acciones del botón Cancelar/Eliminar
+        btnCancelar1.addActionListener(e -> {
+            if (productoSeleccionado != null) {
+                productoDAO.eliminar(productoSeleccionado.getId());
+            }
+            cargarTablaProductos();
+            limpiarCampos();
+        });
+    }
+    
+    // Método para cargar la tabla con productos desde la base de datos
+    private void cargarTablaProductos() {
+        List<Producto> productos = productoDAO.consultar();
+        DefaultTableModel model = (DefaultTableModel) tblProductos1.getModel();
+        model.setRowCount(0); // Limpiar tabla
+        productos.forEach(producto -> {
+            model.addRow(new Object[]{producto.getId(), producto.getNombre(), producto.getPrecio(), producto.getDescripcion()});
+        });
+    }
+    
+    // Método para cargar los datos del producto seleccionado en los campos de texto
+    private void cargarProductoSeleccionado() {
+        int selectedRow = tblProductos1.getSelectedRow();
+        if (selectedRow != -1) {
+            productoSeleccionado = new Producto();
+            productoSeleccionado.setId((int) tblProductos1.getValueAt(selectedRow, 0));
+            txfNombre1.setText((String) tblProductos1.getValueAt(selectedRow, 1));
+            txfPrecio1.setText(tblProductos1.getValueAt(selectedRow, 2).toString());
+            txfDescripcion1.setText((String) tblProductos1.getValueAt(selectedRow, 3));
+
+            // Cambiar el texto de los botones
+            btnGuardar1.setText("Actualizar");
+            btnCancelar1.setText("Eliminar");
+        }
+    }
+    
+    // Método para limpiar los campos de texto y resetear los botones
+    private void limpiarCampos() {
+        txfNombre1.setText("Nombre");
+        txfPrecio1.setText("Precio");
+        txfDescripcion1.setText("Descripcion");
+        productoSeleccionado = null;
+
+        btnGuardar1.setText("Agregar");
+        btnCancelar1.setText("Cancelar");
     }
 
     /**
@@ -46,6 +127,7 @@ public class frmPizzeria extends javax.swing.JFrame {
 
         tblProductos1.setBackground(new java.awt.Color(51, 0, 51));
         tblProductos1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
+        tblProductos1.setForeground(new java.awt.Color(255, 255, 255));
         tblProductos1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {null, null, null, null},
@@ -90,7 +172,7 @@ public class frmPizzeria extends javax.swing.JFrame {
         btnGuardar1.setBackground(new java.awt.Color(51, 0, 51));
         btnGuardar1.setFont(new java.awt.Font("Segoe UI", 1, 14)); // NOI18N
         btnGuardar1.setForeground(new java.awt.Color(255, 255, 255));
-        btnGuardar1.setText("Guardar");
+        btnGuardar1.setText("Agregar");
         btnGuardar1.setBorder(null);
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);

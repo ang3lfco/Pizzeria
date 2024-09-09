@@ -28,16 +28,25 @@ public class ProductoDAO implements IProducto{
 
     @Override
     public boolean agregar(Producto producto) {
-        try{
-            Connection bd = conexion.crearConexion();
-            String insertar = "INSERT INTO productos (nombre, precio, descripcion) VALUES (?,?,?)";
-            PreparedStatement pst = bd.prepareStatement(insertar, Statement.RETURN_GENERATED_KEYS);
-            pst.setString(1, producto.getNombre());
-            pst.setFloat(2, producto.getPrecio());
-            pst.setString(3, producto.getDescripcion());
-            pst.executeUpdate();
-        }
-        catch(SQLException e){
+        String sql = "INSERT INTO productos (nombre, precio, descripcion) VALUES (?, ?, ?)";
+        try (Connection conn = conexion.crearConexion();
+             PreparedStatement stmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            stmt.setString(1, producto.getNombre());
+            stmt.setFloat(2, producto.getPrecio());
+            stmt.setString(3, producto.getDescripcion());
+
+            int rowsInserted = stmt.executeUpdate();
+            if (rowsInserted > 0) {
+                // Recuperar el ID generado automáticamente
+                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        producto.setId(generatedKeys.getInt(1));
+                    }
+                }
+                return true;
+            }
+        } catch (SQLException e) {
             e.printStackTrace();
         }
         return false;
@@ -115,24 +124,24 @@ public class ProductoDAO implements IProducto{
     @Override
     public List<Producto> consultar() {
         List<Producto> productos = new ArrayList<>();
-        try {
-            Connection bd = conexion.crearConexion();
-            String consulta = "SELECT * FROM productos";
-            PreparedStatement pst = bd.prepareStatement(consulta);
-            ResultSet rs = pst.executeQuery();
+        String sql = "SELECT _id, nombre, precio, descripcion FROM productos";
+
+        try (Connection conn = conexion.crearConexion();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
 
             while (rs.next()) {
-                int id = rs.getInt("_id");
-                String nombre = rs.getString("nombre");
-                float precio = rs.getFloat("precio");
-                String descripcion = rs.getString("descripcion");
-
-                Producto producto = new Producto(nombre, precio, descripcion);
+                Producto producto = new Producto();
+                producto.setId(rs.getInt("_id"));  // Asegurarse de recuperar correctamente el ID
+                producto.setNombre(rs.getString("nombre"));
+                producto.setPrecio(rs.getFloat("precio"));
+                producto.setDescripcion(rs.getString("descripcion"));
                 productos.add(producto);
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
+
         return productos;
     }
 }
